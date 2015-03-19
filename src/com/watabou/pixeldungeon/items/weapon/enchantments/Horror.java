@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,9 +17,11 @@
  */
 package com.watabou.pixeldungeon.items.weapon.enchantments;
 
+import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.actors.Char;
 import com.watabou.pixeldungeon.actors.buffs.Buff;
 import com.watabou.pixeldungeon.actors.buffs.Terror;
+import com.watabou.pixeldungeon.actors.buffs.Vertigo;
 import com.watabou.pixeldungeon.items.weapon.Weapon;
 import com.watabou.pixeldungeon.sprites.ItemSprite;
 import com.watabou.pixeldungeon.sprites.ItemSprite.Glowing;
@@ -40,8 +42,11 @@ public class Horror extends Weapon.Enchantment {
 		
 		if (Random.Int( level + 5 ) >= 4) {
 			
-			Terror terror = Buff.affect( defender, Terror.class, Terror.DURATION );
-			terror.source = attacker;
+			if (defender == Dungeon.hero) {
+				Buff.affect( defender, Vertigo.class, Vertigo.duration( defender ) );
+			} else {
+				Buff.affect( defender, Terror.class, Terror.DURATION ).object = attacker.id();
+			}
 			
 			return true;
 		} else {

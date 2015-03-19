@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,14 +25,19 @@ import com.watabou.noosa.audio.Music;
 import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Badges;
 import com.watabou.pixeldungeon.Chrome;
+import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.ui.Archs;
 import com.watabou.pixeldungeon.ui.BadgesList;
+import com.watabou.pixeldungeon.ui.ExitButton;
 import com.watabou.pixeldungeon.ui.ScrollPane;
 import com.watabou.pixeldungeon.ui.Window;
+import com.watabou.utils.Callback;
 
 public class BadgesScene extends PixelScene {
 	
 	private static final String TXT_TITLE = "Your Badges";
+	
+	private static final int MAX_PANE_WIDTH	= 160;
 	
 	@Override
 	public void create() {
@@ -51,8 +56,8 @@ public class BadgesScene extends PixelScene {
 		archs.setSize( w, h );
 		add( archs );
 		
-		int pw = Math.min( 160, w - 10 );
-		int ph = h - 24;
+		int pw = Math.min( MAX_PANE_WIDTH, w - 6 );
+		int ph = h - 30;
 		
 		NinePatch panel = Chrome.get( Chrome.Type.WINDOW );
 		panel.size( pw, ph );
@@ -78,11 +83,33 @@ public class BadgesScene extends PixelScene {
 			panel.innerWidth(), 
 			panel.innerHeight() );
 		
+		ExitButton btnExit = new ExitButton();
+		btnExit.setPos( Camera.main.width - btnExit.width(), 0 );
+		add( btnExit );
+		
 		fadeIn();
+		
+		Badges.loadingListener = new Callback() {
+			@Override
+			public void call() {
+				if (Game.scene() == BadgesScene.this) {
+					PixelDungeon.switchNoFade( BadgesScene.class );
+				}
+			}
+		};
+	}
+	
+	@Override
+	public void destroy() {
+		
+		Badges.saveGlobal();
+		Badges.loadingListener = null;
+		
+		super.destroy();
 	}
 	
 	@Override
 	protected void onBackPressed() {
-		Game.switchScene( TitleScene.class );
+		PixelDungeon.switchNoFade( TitleScene.class );
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,17 +20,16 @@ package com.watabou.pixeldungeon.actors.mobs.npcs;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.actors.Char;
 import com.watabou.pixeldungeon.actors.buffs.Buff;
-import com.watabou.pixeldungeon.actors.mobs.Mob;
 
 import com.watabou.pixeldungeon.sprites.RatKingSprite;
 
-public class RatKing extends Mob.NPC {
+public class RatKing extends NPC {
 
 	{
 		name = "rat king";
 		spriteClass = RatKingSprite.class;
 		
-		state = State.SLEEPING;
+		state = SLEEPEING;
 	}
 	
 	@Override
@@ -45,7 +44,7 @@ public class RatKing extends Mob.NPC {
 	
 	@Override
 	protected Char chooseEnemy() {
-		return DUMMY;
+		return null;
 	}
 	
 	@Override
@@ -64,10 +63,10 @@ public class RatKing extends Mob.NPC {
 	@Override
 	public void interact() {
 		sprite.turnTo( pos, Dungeon.hero.pos );
-		if (state == State.SLEEPING) {
+		if (state == SLEEPEING) {
 			notice();
 			yell( "I'm not sleeping!" );
-			state = State.WANDERING;
+			state = WANDERING;
 		} else {
 			yell( "What is it? I have no time for this nonsense. My kingdom won't rule itself!" );
 		}

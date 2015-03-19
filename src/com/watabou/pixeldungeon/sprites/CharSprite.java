@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ package com.watabou.pixeldungeon.sprites;
 
 import com.watabou.noosa.Game;
 import com.watabou.noosa.MovieClip;
+import com.watabou.noosa.Visual;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
 import com.watabou.noosa.tweeners.PosTweener;
@@ -43,7 +44,6 @@ import com.watabou.utils.Random;
 
 public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip.Listener {
 	
-	// Color constants for floating text
 	public static final int DEFAULT		= 0xFFFFFF;
 	public static final int POSITIVE	= 0x00FF00;
 	public static final int NEGATIVE	= 0xFF0000;
@@ -76,12 +76,16 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	
 	protected EmoIcon emo;
 	
+	private Tweener jumpTweener;
+	private Callback jumpCallback;
+	
 	private float flashTime = 0;
 	
 	protected boolean sleeping = false;
 	
-	// Char owner
 	public Char ch;
+	
+	public boolean isMoving = false;
 	
 	public CharSprite() {
 		super();
@@ -135,12 +139,16 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		motion = new PosTweener( this, worldToCamera( to ), MOVE_INTERVAL );
 		motion.listener = this;
 		parent.add( motion );
+
+		isMoving = true;
 		
 		turnTo( from , to );
 		
 		if (visible && Level.water[from] && !ch.flying) {
 			GameScene.ripple( from );
 		}
+		
+		ch.onMotionComplete();
 	}
 	
 	public void interruptMotion() {
@@ -178,6 +186,17 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		} else if (tx < fx) {
 			flipHorizontal = true;
 		}
+	}
+	
+	public void jump( int from, int to, Callback callback ) {	
+		jumpCallback = callback;
+		
+		int distance = Level.distance( from, to );
+		jumpTweener = new JumpTweener( this, worldToCamera( to ), distance * 4, distance * 0.1f );
+		jumpTweener.listener = this;
+		parent.add( jumpTweener );
+		
+		turnTo( from, to );
 	}
 	
 	public void die() {
@@ -221,7 +240,6 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 		}
 	}
 	
-	// Blood color
 	public int blood() {
 		return 0xFFBB0000;
 	}
@@ -375,10 +393,21 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	
 	@Override
 	public void onComplete( Tweener tweener ) {
-		if (tweener == motion) {
+		if (tweener == jumpTweener) {
+			
+			if (visible && Level.water[ch.pos] && !ch.flying) {
+				GameScene.ripple( ch.pos );
+			}
+			if (jumpCallback != null) {
+				jumpCallback.call();
+			}
+			
+		} else if (tweener == motion) {
+			
+			isMoving = false;
+			
 			motion.killAndErase();
 			motion = null;
-			ch.onMotionComplete();
 		}
 	}
 
@@ -402,6 +431,31 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 				
 			}
 			
+		}
+	}
+	
+	private static class JumpTweener extends Tweener {
+
+		public Visual visual;
+		
+		public PointF start;
+		public PointF end;
+		
+		public float height;
+		
+		public JumpTweener( Visual visual, PointF pos, float height, float time ) {
+			super( visual, time );
+			
+			this.visual = visual;
+			start = visual.point();
+			end = pos;
+
+			this.height = height;
+		}
+
+		@Override
+		protected void updateValues( float progress ) {
+			visual.point( PointF.inter( start, end, progress ).offset( 0, -height * 4 * progress * (1 - progress) ) );
 		}
 	}
 }

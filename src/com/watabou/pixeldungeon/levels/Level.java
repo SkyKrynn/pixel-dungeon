@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import java.util.HashSet;
 import com.watabou.noosa.Scene;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
+import com.watabou.pixeldungeon.Challenges;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.Statistics;
 import com.watabou.pixeldungeon.actors.Actor;
@@ -45,10 +46,17 @@ import com.watabou.pixeldungeon.actors.mobs.Mob;
 import com.watabou.pixeldungeon.effects.particles.FlowParticle;
 import com.watabou.pixeldungeon.effects.particles.WindParticle;
 import com.watabou.pixeldungeon.items.Generator;
+import com.watabou.pixeldungeon.items.Gold;
 import com.watabou.pixeldungeon.items.Heap;
 import com.watabou.pixeldungeon.items.Item;
-import com.watabou.pixeldungeon.items.Stylus;
+import com.watabou.pixeldungeon.items.armor.Armor;
+import com.watabou.pixeldungeon.items.bags.ScrollHolder;
+import com.watabou.pixeldungeon.items.bags.SeedPouch;
+import com.watabou.pixeldungeon.items.food.Food;
+import com.watabou.pixeldungeon.items.potions.PotionOfHealing;
 import com.watabou.pixeldungeon.items.potions.PotionOfStrength;
+import com.watabou.pixeldungeon.items.scrolls.Scroll;
+import com.watabou.pixeldungeon.items.scrolls.ScrollOfEnchantment;
 import com.watabou.pixeldungeon.items.scrolls.ScrollOfUpgrade;
 import com.watabou.pixeldungeon.levels.features.Chasm;
 import com.watabou.pixeldungeon.levels.features.Door;
@@ -86,15 +94,13 @@ public abstract class Level implements Bundlable {
 	private static final String TXT_HIDDEN_PLATE_CLICKS = "A hidden pressure plate clicks!";
 	
 	public static boolean resizingNeeded;
-	// This one can be different from resizingNeeded if the level
-	// was created in the older version of the game
 	public static int loadedMapSize;
 	
 	public int[] map;
 	public boolean[] visited;
 	public boolean[] mapped;
 	
-	public int viewDistance = 8;
+	public int viewDistance = Dungeon.isChallenged( Challenges.DARKNESS ) ? 3: 8;
 	
 	public static boolean[] fieldOfView = new boolean[LENGTH];
 	
@@ -158,13 +164,13 @@ public abstract class Level implements Bundlable {
 				addItemToSpawn( new PotionOfStrength() );
 				Dungeon.potionOfStrength++;
 			}
-			if (Dungeon.soeNeeded()) {
+			if (Dungeon.souNeeded()) {
 				addItemToSpawn( new ScrollOfUpgrade() );
 				Dungeon.scrollsOfUpgrade++;
 			}
-			if (Dungeon.asNeeded()) {
-				addItemToSpawn( new Stylus() );
-				Dungeon.arcaneStyli++;
+			if (Dungeon.soeNeeded()) {
+				addItemToSpawn( new ScrollOfEnchantment() );
+				Dungeon.scrollsOfEnchantment++;
 			}
 			
 			if (Dungeon.depth > 1) {
@@ -288,7 +294,7 @@ public abstract class Level implements Bundlable {
 	}
 	
 	private void adjustMapSize() {
-		// For levels from older saves
+		// For levels saved before 1.6.3
 		if (map.length < LENGTH) {
 			
 			resizingNeeded = true;
@@ -333,8 +339,11 @@ public abstract class Level implements Bundlable {
 	}
 	
 	abstract protected boolean build();
+
 	abstract protected void decorate();
+
 	abstract protected void createMobs();
+
 	abstract protected void createItems();
 	
 	public void addVisuals( Scene scene ) {
@@ -359,7 +368,7 @@ public abstract class Level implements Bundlable {
 				if (mobs.size() < nMobs()) {
 
 					Mob mob = Bestiary.mutable( Dungeon.depth );
-					mob.state = Mob.State.WANDERING;
+					mob.state = mob.WANDERING;
 					mob.pos = randomRespawnCell();
 					if (Dungeon.hero.isAlive() && mob.pos != -1) {
 						GameScene.add( mob );
@@ -405,7 +414,7 @@ public abstract class Level implements Bundlable {
 			return null;
 		}
 	}
-	
+
 	private void buildFlagMaps() {
 		
 		for (int i=0; i < LENGTH; i++) {
@@ -419,7 +428,7 @@ public abstract class Level implements Bundlable {
 			water[i]		= (flags & Terrain.LIQUID) != 0;
 			pit[i]			= (flags & Terrain.PIT) != 0;
 		}
-		
+
 		int lastRow = LENGTH - WIDTH;
 		for (int i=0; i < WIDTH; i++) {
 			passable[i] = avoid[i] = false;
@@ -459,7 +468,7 @@ public abstract class Level implements Bundlable {
 		}
 	}
 	
-	private void cleanWalls() {		
+	private void cleanWalls() {	
 		for (int i=0; i < LENGTH; i++) {
 			
 			boolean d = false;
@@ -504,6 +513,26 @@ public abstract class Level implements Bundlable {
 	
 	public Heap drop( Item item, int cell ) {
 		
+		if (Dungeon.isChallenged( Challenges.NO_FOOD ) && item instanceof Food) {
+			item = new Gold( item.price() );
+		} else
+		if (Dungeon.isChallenged( Challenges.NO_ARMOR ) && item instanceof Armor) {
+			item = new Gold( item.price() );
+		} else
+		if (Dungeon.isChallenged( Challenges.NO_HEALING ) && item instanceof PotionOfHealing) {
+			item = new Gold( item.price() );
+		} else
+		if (Dungeon.isChallenged( Challenges.NO_HERBALISM ) && item instanceof SeedPouch) {
+			item = new Gold( item.price() );
+		} else
+		if (Dungeon.isChallenged( Challenges.NO_SCROLLS ) && (item instanceof Scroll || item instanceof ScrollHolder)) {
+			if (item instanceof ScrollOfUpgrade) {
+				// These scrolls still can be found
+			} else {
+				item = new Gold( item.price() );
+			}
+		}
+		
 		if ((map[cell] == Terrain.ALCHEMY) && !(item instanceof Plant.Seed)) {
 			int n;
 			do {
@@ -518,6 +547,7 @@ public abstract class Level implements Bundlable {
 			heap = new Heap();
 			heap.pos = cell;
 			if (map[cell] == Terrain.CHASM || (Dungeon.level != null && pit[cell])) {
+				Dungeon.dropToChasm( item );
 				GameScene.discard( heap );
 			} else {
 				heaps.put( cell, heap );
@@ -543,7 +573,6 @@ public abstract class Level implements Bundlable {
 	}
 	
 	public Plant plant( Plant.Seed seed, int pos ) {
-
 		Plant plant = plants.get( pos );
 		if (plant != null) {
 			plant.wither();
@@ -551,7 +580,7 @@ public abstract class Level implements Bundlable {
 		
 		plant = seed.couch( pos );
 		plants.put( pos, plant );
-		
+
 		GameScene.add( plant );
 		
 		return plant;
@@ -742,7 +771,7 @@ public abstract class Level implements Bundlable {
 		} else {
 			Arrays.fill( fieldOfView, false );
 		}
-		
+
 		int sense = 1;
 		if (c.isAlive()) {
 			for (Buff b : c.buffs( MindVision.class )) {
@@ -799,7 +828,6 @@ public abstract class Level implements Bundlable {
 				}
 			}
 			if (c.buff( Awareness.class ) != null) {
-
 				for (Heap heap : heaps.values()) {
 					int p = heap.pos;
 					fieldOfView[p] = true;

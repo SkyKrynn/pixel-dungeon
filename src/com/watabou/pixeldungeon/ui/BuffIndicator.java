@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,6 +62,7 @@ public class BuffIndicator extends Component {
 	public static final int BLEEDING	= 26;
 	public static final int MARK		= 27;
 	public static final int DEFERRED	= 28;
+	public static final int VERTIGO		= 29;
 	
 	public static final int SIZE	= 7;
 	

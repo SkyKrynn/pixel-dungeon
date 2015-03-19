@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ package com.watabou.pixeldungeon.actors;
 
 import java.util.HashSet;
 
+import com.watabou.noosa.Camera;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Dungeon;
@@ -27,6 +28,8 @@ import com.watabou.pixeldungeon.actors.buffs.Amok;
 import com.watabou.pixeldungeon.actors.buffs.Bleeding;
 import com.watabou.pixeldungeon.actors.buffs.Buff;
 import com.watabou.pixeldungeon.actors.buffs.Burning;
+import com.watabou.pixeldungeon.actors.buffs.Charm;
+import com.watabou.pixeldungeon.actors.buffs.Vertigo;
 import com.watabou.pixeldungeon.actors.buffs.Cripple;
 import com.watabou.pixeldungeon.actors.buffs.Frost;
 import com.watabou.pixeldungeon.actors.buffs.Invisibility;
@@ -54,6 +57,7 @@ import com.watabou.pixeldungeon.utils.GLog;
 import com.watabou.pixeldungeon.utils.Utils;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.GameMath;
 import com.watabou.utils.Random;
 
 public abstract class Char extends Actor {
@@ -79,7 +83,6 @@ public abstract class Char extends Actor {
 	protected float baseSpeed	= 1;
 	
 	public boolean paralysed	= false;
-	public boolean pacified		= false;
 	public boolean rooted		= false;
 	public boolean flying		= false;
 	public int invisible		= 0;
@@ -136,12 +139,12 @@ public abstract class Char extends Actor {
 				GLog.i( TXT_HIT, name, enemy.name );
 			}
 			
-			// Refactoring needed!
-			int dr = this instanceof Hero && ((Hero)this).usingRanged && ((Hero)this).subClass == HeroSubClass.SNIPER ? 
-				0 : Random.IntRange( 0, enemy.dr() );
+			// FIXME
+			int dr = this instanceof Hero && ((Hero)this).rangedWeapon != null && ((Hero)this).subClass == HeroSubClass.SNIPER ? 0 :
+				Random.IntRange( 0, enemy.dr() );
 			
 			int dmg = damageRoll();
-			int effectiveDamage = Math.max( dmg - dr, 0 );;
+			int effectiveDamage = Math.max( dmg - dr, 0 );
 			
 			effectiveDamage = attackProc( enemy, effectiveDamage );
 			effectiveDamage = enemy.defenseProc( this, effectiveDamage );
@@ -153,6 +156,9 @@ public abstract class Char extends Actor {
 
 			if (enemy == Dungeon.hero) {
 				Dungeon.hero.interrupt();
+				if (effectiveDamage > enemy.HT / 4) {
+					Camera.main.shake( GameMath.gate( 1, effectiveDamage / (enemy.HT / 4), 5), 0.3f );
+				}
 			}
 			
 			enemy.sprite.bloodBurstA( sprite.center(), effectiveDamage );
@@ -163,11 +169,12 @@ public abstract class Char extends Actor {
 					
 					if (Dungeon.hero.killerGlyph != null) {
 						
-						Dungeon.fail( Utils.format( ResultDescriptions.GLYPH, Dungeon.hero.killerGlyph.name(), Dungeon.depth ) );
-						GLog.n( TXT_KILL, Dungeon.hero.killerGlyph.name() );
+					// FIXME
+					//	Dungeon.fail( Utils.format( ResultDescriptions.GLYPH, Dungeon.hero.killerGlyph.name(), Dungeon.depth ) );
+					//	GLog.n( TXT_KILL, Dungeon.hero.killerGlyph.name() );
 						
 					} else {
-						if (Bestiary.isUnique( this )) {
+						if (Bestiary.isBoss( this )) {
 							Dungeon.fail( Utils.format( ResultDescriptions.BOSS, name, Dungeon.depth ) );
 						} else {
 							Dungeon.fail( Utils.format( ResultDescriptions.MOB, 
@@ -331,6 +338,15 @@ public abstract class Char extends Actor {
 		return null;
 	}
 	
+	public boolean isCharmedBy( Char ch ) {
+		int chID = ch.id();
+		for (Buff b : buffs) {
+			if (b instanceof Charm && ((Charm)b).object == chID) {
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	public void add( Buff buff ) {
 		
@@ -377,6 +393,10 @@ public abstract class Char extends Actor {
 
 				sprite.showStatus( CharSprite.NEGATIVE, "bleeding" );
 				
+			} else if (buff instanceof Vertigo) {
+
+				sprite.showStatus( CharSprite.NEGATIVE, "dizzy" );
+				
 			} else if (buff instanceof Sleep) {
 				sprite.idle();
 			}
@@ -420,6 +440,8 @@ public abstract class Char extends Actor {
 		}
 	}
 	
+	
+	
 	@Override
 	protected void onRemove() {
 		for (Buff buff : buffs.toArray( new Buff[0] )) {
@@ -450,6 +472,14 @@ public abstract class Char extends Actor {
 	}
 	
 	public void move( int step ) {
+		
+		if (Level.adjacent( step, pos ) && buff( Vertigo.class ) != null) {
+			step = pos + Level.NEIGHBOURS8[Random.Int( 8 )];
+			if (!(Level.passable[step] || Level.avoid[step]) || Actor.findChar( step ) != null) {
+				return;
+			}
+		}
+		
 		if (Dungeon.level.map[pos] == Terrain.OPEN_DOOR) {
 			Door.leave( pos );
 		}

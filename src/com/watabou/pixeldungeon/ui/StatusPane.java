@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,9 @@ import com.watabou.noosa.Camera;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.TouchArea;
+import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
+import com.watabou.noosa.ui.Button;
 import com.watabou.noosa.ui.Component;
 import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Dungeon;
@@ -33,6 +35,7 @@ import com.watabou.pixeldungeon.items.keys.IronKey;
 import com.watabou.pixeldungeon.scenes.GameScene;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.sprites.HeroSprite;
+import com.watabou.pixeldungeon.windows.WndGame;
 import com.watabou.pixeldungeon.windows.WndHero;
 
 public class StatusPane extends Component {
@@ -55,13 +58,16 @@ public class StatusPane extends Component {
 	
 	private DangerIndicator danger;
 	private LootIndicator loot;
+	private ResumeButton resume;
 	private BuffIndicator buffs;
 	private Compass compass;
+	
+	private MenuButton btnMenu;
 	
 	@Override
 	protected void createChildren() {
 		
-		shield = new NinePatch( Assets.STATUS, 80, 0, 30, 0 );
+		shield = new NinePatch( Assets.STATUS, 80, 0, 30   + 18, 0 );
 		add( shield );
 		
 		add( new TouchArea( 0, 1, 30, 30 ) {
@@ -74,6 +80,9 @@ public class StatusPane extends Component {
 				GameScene.show( new WndHero() );
 			};			
 		} );
+		
+		btnMenu = new MenuButton();
+		add( btnMenu );
 		
 		avatar = HeroSprite.avatar( Dungeon.hero.heroClass, lastTier );
 		add( avatar );
@@ -114,6 +123,9 @@ public class StatusPane extends Component {
 		loot = new LootIndicator();
 		add( loot );
 		
+		resume = new ResumeButton();
+		add( resume );
+		
 		buffs = new BuffIndicator( Dungeon.hero );
 		add( buffs );
 	}
@@ -134,21 +146,53 @@ public class StatusPane extends Component {
 		hp.x = 30;
 		hp.y = 3;
 		
-		depth.x = width - 24 - depth.width();
+		depth.x = width - 24 - depth.width()    - 18;
 		depth.y = 6;
 		
 		keys.y = 6;
 		
-		danger.setPos( width - danger.width(), 20 );
-		
-		loot.setPos( width - loot.width(),  danger.bottom() + 2 );
+		layoutTags();
 		
 		buffs.setPos( 32, 11 );
+		
+		btnMenu.setPos( width - btnMenu.width(), 1 );
 	}
+	
+	private void layoutTags() {
+		
+		float pos = 18;
+		
+		if (tagDanger) {
+			danger.setPos( width - danger.width(), pos );
+			pos = danger.bottom() + 1;
+		}
+		
+		if (tagLoot) {
+			loot.setPos( width - loot.width(), pos );
+			pos = loot.bottom() + 1;
+		}
+		
+		if (tagResume) {
+			resume.setPos( width - resume.width(), pos );
+		}
+	}
+	
+	private boolean tagDanger	= false;
+	private boolean tagLoot		= false;
+	private boolean tagResume	= false;
 	
 	@Override
 	public void update() {
 		super.update();
+		
+		if (tagDanger != danger.visible || tagLoot != loot.visible || tagResume != resume.visible) {
+			
+			tagDanger = danger.visible;
+			tagLoot = loot.visible;
+			tagResume = resume.visible;
+			
+			layoutTags();
+		}
 		
 		float health = (float)Dungeon.hero.HP / Dungeon.hero.HT;
 		
@@ -182,18 +226,62 @@ public class StatusPane extends Component {
 			level.y = PixelScene.align( 27.5f - level.baseLine() / 2 );
 		}
 		
-		int k = IronKey.curDepthQunatity;
+		int k = IronKey.curDepthQuantity;
 		if (k != lastKeys) {
 			lastKeys = k;
 			keys.text( Integer.toString( lastKeys ) );
 			keys.measure();
-			keys.x = width - 8 - keys.width();
+			keys.x = width - 8 - keys.width()    - 18;
 		}
 		
 		int tier = Dungeon.hero.tier();
 		if (tier != lastTier) {
 			lastTier = tier;
 			avatar.copy( HeroSprite.avatar( Dungeon.hero.heroClass, tier ) );
+		}
+	}
+	
+	private static class MenuButton extends Button {
+		
+		private Image image;
+		
+		public MenuButton() {
+			super();
+			
+			width = image.width + 4;
+			height = image.height + 4;
+		}
+		
+		@Override
+		protected void createChildren() {
+			super.createChildren();
+			
+			image = new Image( Assets.STATUS, 114, 3, 12, 11 );
+			add( image );
+		}
+		
+		@Override
+		protected void layout() {
+			super.layout();
+			
+			image.x = x + 2;
+			image.y = y + 2;
+		}
+		
+		@Override
+		protected void onTouchDown() {
+			image.brightness( 1.5f );
+			Sample.INSTANCE.play( Assets.SND_CLICK );
+		}
+		
+		@Override
+		protected void onTouchUp() {
+			image.resetColor();
+		}
+		
+		@Override
+		protected void onClick() {
+			GameScene.show( new WndGame() );
 		}
 	}
 }

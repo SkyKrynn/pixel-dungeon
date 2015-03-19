@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ public class Ballistica {
 
 	public static int[] trace = new int[Math.max( Level.WIDTH, Level.HEIGHT )];
 	public static int distance;
-
+	
 	public static int cast( int from, int to, boolean magic, boolean hitChars ) {
 		
 		int w = Level.WIDTH;

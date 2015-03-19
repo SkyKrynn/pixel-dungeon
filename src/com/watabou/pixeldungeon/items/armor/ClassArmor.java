@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@ abstract public class ClassArmor extends Armor {
 	@Override
 	public ArrayList<String> actions( Hero hero ) {
 		ArrayList<String> actions = super.actions( hero );
-		if (hero.HP >= 2 && isEquipped( hero )) {
+		if (hero.HP >= 3 && isEquipped( hero )) {
 			actions.add( special() );
 		}
 		return actions;
@@ -95,7 +95,7 @@ abstract public class ClassArmor extends Armor {
 	public void execute( Hero hero, String action ) {
 		if (action == special()) {
 			
-			if (hero.HP < 2) {
+			if (hero.HP < 3) {
 				GLog.w( TXT_LOW_HEALTH );
 			} else if (!isEquipped( hero )) {
 				GLog.w( TXT_NOT_EQUIPPED );

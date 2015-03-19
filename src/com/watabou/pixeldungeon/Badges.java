@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ import com.watabou.pixeldungeon.items.wands.Wand;
 import com.watabou.pixeldungeon.scenes.PixelScene;
 import com.watabou.pixeldungeon.utils.GLog;
 import com.watabou.utils.Bundle;
+import com.watabou.utils.Callback;
 
 public class Badges {
 	
@@ -75,7 +76,7 @@ public class Badges {
 		DEATH_FROM_POISON( "Death from poison", 25 ),
 		DEATH_FROM_GAS( "Death from toxic gas", 26 ),
 		DEATH_FROM_HUNGER( "Death from hunger", 27 ),
-		DEATH_FROM_GLYPH( "Death from a glyph", 57 ),
+		DEATH_FROM_GLYPH( "Death from an enchantment", 57 ),
 		DEATH_FROM_FALLING( "Death from falling down", 59 ),
 		YASD( "Death from fire, poison, toxic gas & hunger", 34, true ),
 		BOSS_SLAIN_1_WARRIOR,
@@ -96,8 +97,7 @@ public class Badges {
 		BOSS_SLAIN_3_SNIPER,
 		BOSS_SLAIN_3_WARDEN,
 		BOSS_SLAIN_3_ALL_SUBCLASSES( 
-			"3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, " +
-			"Freerunner, Assassin, Sniper & Warden", 33, true ),
+			"3rd boss slain by Gladiator, Berserker, Warlock, Battlemage, Freerunner, Assassin, Sniper & Warden", 33, true ),
 		RING_OF_HAGGLER( "Ring of Haggler obtained", 20 ),
 		RING_OF_THORNS( "Ring of Thorns obtained", 21 ),
 		STRENGTH_ATTAINED_1( "13 points of Strength attained", 40 ),
@@ -142,6 +142,7 @@ public class Badges {
 		GAMES_PLAYED_3( "500 games played", 62, true ),
 		GAMES_PLAYED_4( "2000 games played", 63, true ),
 		HAPPY_END( "Happy end", 38 ),
+		CHAMPION( "Challenge won", 39, true ),
 		SUPPORTER( "Thanks for your support!", 31, true );
 		
 		public boolean meta;
@@ -169,6 +170,8 @@ public class Badges {
 	
 	private static boolean saveNeeded = false;
 	
+	public static Callback loadingListener = null;
+	
 	public static void reset() {
 		local.clear();
 		loadGlobal();
@@ -193,7 +196,7 @@ public class Badges {
 	
 	private static void store( Bundle bundle, HashSet<Badge> badges ) {
 		int count = 0;
-		String names[] = new String[global.size()];
+		String names[] = new String[badges.size()];
 		
 		for (Badge badge:badges) {
 			names[count++] = badge.toString();
@@ -225,9 +228,12 @@ public class Badges {
 	}
 	
 	public static void saveGlobal() {
+		
+		Bundle bundle = null;
+		
 		if (saveNeeded) {
 			
-			Bundle bundle = new Bundle();
+			bundle = new Bundle();
 			store( bundle, global );
 			
 			try {
@@ -393,9 +399,9 @@ public class Badges {
 	public static void validateItemLevelAquired( Item item ) {
 		
 		// This method should be called:
-		// 1) When an item is obtained (Item.collect)
-		// 2) When an item is upgraded (ScrollOfUpgrade, ScrollOfWeaponUpgrade, ShortSword, WandOfMagicMissile)
-		// 3) When an item is identified
+		// 1) When an item gets obtained (Item.collect)
+		// 2) When an item gets upgraded (ScrollOfUpgrade, ScrollOfWeaponUpgrade, ShortSword, WandOfMagicMissile)
+		// 3) When an item gets identified
 		if (!item.levelKnown) {
 			return;
 		}
@@ -840,6 +846,10 @@ public class Badges {
 	
 	public static void validateHappyEnd() {
 		displayBadge( Badge.HAPPY_END );
+	}
+	
+	public static void validateChampion() {
+		displayBadge( Badge.CHAMPION );
 	}
 	
 	private static void displayBadge( Badge badge ) {

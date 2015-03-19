@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -236,8 +236,6 @@ public class HallsBossLevel extends Level {
 		switch (tile) {
 		case Terrain.WATER:
 			return "It looks like lava, but it's cold and probably safe to touch.";
-		case Terrain.EMPTY_DECO:
-			return "Candles on the floor are probably remains of some ritual that took place here.";
 		case Terrain.STATUE:
 		case Terrain.STATUE_SP:
 			return "The pillar is made of real humanoid skulls. Awesome."; 

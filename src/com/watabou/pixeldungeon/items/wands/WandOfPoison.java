@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,8 +37,8 @@ public class WandOfPoison extends Wand {
 	protected void onZap( int cell ) {
 		Char ch = Actor.findChar( cell );
 		if (ch != null) {
-			
-			Buff.affect( ch, Poison.class ).set( Poison.durationFactor( ch ) * (1 + 2 * (float)Math.pow( 1.5, level() )) );
+
+			Buff.affect( ch, Poison.class ).set( Poison.durationFactor( ch ) * (5 + level()) );
 			
 		} else {
 			

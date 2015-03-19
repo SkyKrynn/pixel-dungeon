@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,6 +57,7 @@ public class Speck extends Image {
 	public static final int PARALYSIS	= 108;
 	public static final int DUST		= 109;
 	public static final int FORGE		= 110;
+	public static final int CONFUSION	= 111;
 	
 	private static final int SIZE = 7;
 	
@@ -99,6 +100,7 @@ public class Speck extends Image {
 		case JET:
 		case TOXIC:
 		case PARALYSIS:
+		case CONFUSION:
 		case DUST:
 			frame( film.get( STEAM ) );
 			break;
@@ -132,7 +134,7 @@ public class Speck extends Image {
 			break;
 		
 		case FORGE:
-			speed.polar( Random.Float( -3.1415926f, 0 ), Random.Float( 64 ) );
+			speed.polar( -Random.Float( 3.1415926f ), Random.Float( 64 ) );
 			acc.set( 0, 128 );
 			angle = Random.Float( 360 );
 			angularSpeed = Random.Float( -360, +360 );
@@ -140,7 +142,7 @@ public class Speck extends Image {
 			break;
 			
 		case EVOKE:
-			speed.polar( Random.Float( -3.1415926f, 0 ), 50 );
+			speed.polar( -Random.Float( 3.1415926f ), 50 );
 			acc.set( 0, 50 );
 			angle = Random.Float( 360 );
 			angularSpeed = Random.Float( -180, +180 );
@@ -272,6 +274,13 @@ public class Speck extends Image {
 			angle = Random.Float( 360 );
 			lifespan = Random.Float( 1f, 3f );
 			break;
+		
+		case CONFUSION:
+			hardlight( Random.Int( 0x1000000 ) | 0x000080 );
+			angularSpeed = Random.Float( -20, +20 );
+			angle = Random.Float( 360 );
+			lifespan = Random.Float( 1f, 3f );
+			break;
 			
 		case DUST:
 			hardlight( 0xFFFF66 );
@@ -380,6 +389,7 @@ public class Speck extends Image {
 			case STEAM:
 			case TOXIC:
 			case PARALYSIS:
+			case CONFUSION:
 			case DUST:
 				am = p < 0.5f ? p : 1 - p;
 				scale.set( 1 + p * 2 );
@@ -400,6 +410,10 @@ public class Speck extends Image {
 	}
 	
 	public static Emitter.Factory factory( final int type ) {
+		return factory( type, false );
+	}
+	
+	public static Emitter.Factory factory( final int type, final boolean lightMode ) {
 		
 		Emitter.Factory factory = factories.get( type );
 		
@@ -409,6 +423,10 @@ public class Speck extends Image {
 				public void emit ( Emitter emitter, int index, float x, float y ) {
 					Speck p = (Speck)emitter.recycle( Speck.class );
 					p.reset( index, x, y, type );
+				}
+				@Override
+				public boolean lightMode() {
+					return lightMode;
 				}
 			};
 			factories.put( type, factory );

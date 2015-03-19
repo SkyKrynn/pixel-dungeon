@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,11 +44,9 @@ public class PlantSprite extends Image {
 		super( Assets.PLANTS );
 		
 		if (frames == null) {
-			// Hardcoded size
 			frames = new TextureFilm( texture, 16, 16 );
 		}
 		
-		// Hardcoded origin
 		origin.set( 8, 12 );
 	}
 	
@@ -65,8 +63,8 @@ public class PlantSprite extends Image {
 		alpha( 1f );
 		
 		pos = plant.pos;
-		x = pos % Level.WIDTH * DungeonTilemap.SIZE;
-		y = pos / Level.WIDTH * DungeonTilemap.SIZE;
+		x = (pos % Level.WIDTH) * DungeonTilemap.SIZE;
+		y = (pos / Level.WIDTH) * DungeonTilemap.SIZE;
 		
 		state = State.GROWING;
 		time = DELAY;

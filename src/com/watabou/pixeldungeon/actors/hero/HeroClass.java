@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,9 @@ package com.watabou.pixeldungeon.actors.hero;
 
 import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Badges;
-import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.items.TomeOfMastery;
 import com.watabou.pixeldungeon.items.armor.ClothArmor;
+import com.watabou.pixeldungeon.items.bags.Keyring;
 import com.watabou.pixeldungeon.items.food.Food;
 import com.watabou.pixeldungeon.items.potions.PotionOfStrength;
 import com.watabou.pixeldungeon.items.rings.RingOfShadows;
@@ -33,6 +33,7 @@ import com.watabou.pixeldungeon.items.weapon.melee.Knuckles;
 import com.watabou.pixeldungeon.items.weapon.melee.ShortSword;
 import com.watabou.pixeldungeon.items.weapon.missiles.Dart;
 import com.watabou.pixeldungeon.items.weapon.missiles.Boomerang;
+import com.watabou.pixeldungeon.ui.QuickSlot;
 import com.watabou.utils.Bundle;
 
 public enum HeroClass {
@@ -73,7 +74,7 @@ public enum HeroClass {
 	public static final String[] HUN_PERKS = {
 		"Huntresses start with 15 points of Health.",
 		"Huntresses start with a unique upgradeable boomerang.",
-		"Huntresses are proficient with missile weapons and get damage bonus for excessive strength when using them.",
+		"Huntresses are proficient with missile weapons and get a damage bonus for excessive strength when using them.",
 		"Huntresses gain more health from dewdrops.",
 		"Huntresses sense neighbouring monsters even if they are hidden behind obstacles."
 	};
@@ -81,6 +82,8 @@ public enum HeroClass {
 	public void initHero( Hero hero ) {
 		
 		hero.heroClass = this;
+		
+		initCommon( hero );
 		
 		switch (this) {
 		case WARRIOR:
@@ -100,57 +103,63 @@ public enum HeroClass {
 			break;
 		}
 		
+		if (Badges.isUnlocked( masteryBadge() )) {
+			new TomeOfMastery().collect();
+		}
+		
 		hero.updateAwareness();
+	}
+	
+	private static void initCommon( Hero hero ) {
+		(hero.belongings.armor = new ClothArmor()).identify();
+		new Food().identify().collect();
+		new Keyring().collect();
+	}
+	
+	public Badges.Badge masteryBadge() {
+		switch (this) {
+		case WARRIOR:
+			return Badges.Badge.MASTERY_WARRIOR;
+		case MAGE:
+			return Badges.Badge.MASTERY_MAGE;
+		case ROGUE:
+			return Badges.Badge.MASTERY_ROGUE;
+		case HUNTRESS:
+			return Badges.Badge.MASTERY_HUNTRESS;
+		}
+		return null;
 	}
 	
 	private static void initWarrior( Hero hero ) {
 		hero.STR = hero.STR + 1;
 		
 		(hero.belongings.weapon = new ShortSword()).identify();
-		(hero.belongings.armor = new ClothArmor()).identify();
 		new Dart( 8 ).identify().collect();
-		new Food().identify().collect();
 		
-		if (Badges.isUnlocked( Badges.Badge.MASTERY_WARRIOR )) {
-			new TomeOfMastery().collect();
-		}
-		
-		Dungeon.quickslot = Dart.class;
+		QuickSlot.primaryValue = Dart.class;
 		
 		new PotionOfStrength().setKnown();
 	}
 	
 	private static void initMage( Hero hero ) {	
 		(hero.belongings.weapon = new Knuckles()).identify();
-		(hero.belongings.armor = new ClothArmor()).identify();
-		new Food().identify().collect();
 		
 		WandOfMagicMissile wand = new WandOfMagicMissile();
 		wand.identify().collect();
 		
-		if (Badges.isUnlocked( Badges.Badge.MASTERY_MAGE )) {
-			new TomeOfMastery().collect();
-		}
-		
-		Dungeon.quickslot = wand;
+		QuickSlot.primaryValue = wand;
 		
 		new ScrollOfIdentify().setKnown();
 	}
 	
 	private static void initRogue( Hero hero ) {
 		(hero.belongings.weapon = new Dagger()).identify();
-		(hero.belongings.armor = new ClothArmor()).identify();
 		(hero.belongings.ring1 = new RingOfShadows()).upgrade().identify();
 		new Dart( 8 ).identify().collect();
-		new Food().identify().collect();
 		
 		hero.belongings.ring1.activate( hero );
 		
-		if (Badges.isUnlocked( Badges.Badge.MASTERY_ROGUE )) {
-			new TomeOfMastery().collect();
-		}
-		
-		Dungeon.quickslot = Dart.class;
+		QuickSlot.primaryValue = Dart.class;
 		
 		new ScrollOfMagicMapping().setKnown();
 	}
@@ -160,16 +169,10 @@ public enum HeroClass {
 		hero.HP = (hero.HT -= 5);
 		
 		(hero.belongings.weapon = new Dagger()).identify();
-		(hero.belongings.armor = new ClothArmor()).identify();
 		Boomerang boomerang = new Boomerang();
 		boomerang.identify().collect();
-		new Food().identify().collect();
 		
-		if (Badges.isUnlocked( Badges.Badge.MASTERY_HUNTRESS )) {
-			new TomeOfMastery().collect();
-		}
-		
-		Dungeon.quickslot = boomerang;
+		QuickSlot.primaryValue = boomerang;
 	}
 	
 	public String title() {

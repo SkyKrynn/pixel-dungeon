@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -120,12 +120,11 @@ public class Belongings implements Iterable<Item> {
 	
 	public void countIronKeys() {
 		
-		IronKey.curDepthQunatity = 0;
+		IronKey.curDepthQuantity = 0;
 		
 		for (Item item : backpack) {
 			if (item instanceof IronKey && ((IronKey)item).depth == Dungeon.depth) {
-				IronKey.curDepthQunatity = item.quantity();
-				return;
+				IronKey.curDepthQuantity++;
 			}
 		}
 	}
@@ -167,14 +166,13 @@ public class Belongings implements Iterable<Item> {
 	}
 	
 	public void resurrect( int depth ) {
-
 		for (Item item : backpack.items.toArray( new Item[0])) {
 			if (item instanceof Key) {
 				if (((Key)item).depth == depth) {
 					item.detachAll( backpack );
 				}
 			} else if (item.unique) {
-				
+				// Keep unique items
 			} else if (!item.isEquipped( owner )) {
 				item.detachAll( backpack );
 			}

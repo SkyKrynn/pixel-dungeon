@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -89,7 +89,7 @@ public class PrisonBossLevel extends RegularLevel {
 	protected boolean build() {
 		
 		initRooms();
-	
+
 		int distance;
 		int retry = 0;
 
@@ -135,7 +135,7 @@ public class PrisonBossLevel extends RegularLevel {
 		
 		anteroom = path.get( path.size() - 2 );
 		anteroom.type = Type.STANDARD;
-
+		
 		Room room = roomEntrance;
 		for (Room next : path) {
 			room.connect( next );
@@ -149,7 +149,7 @@ public class PrisonBossLevel extends RegularLevel {
 		}
 		
 		paint();
-		
+
 		Room r = (Room)roomExit.connected.keySet().toArray()[0];
 		if (roomExit.connected.get( r ).y == roomExit.top) {
 			return false;
@@ -172,7 +172,6 @@ public class PrisonBossLevel extends RegularLevel {
 	}
 	
 	protected void paintDoors( Room r ) {
-		
 		for (Room n : r.connected.keySet()) {
 			
 			if (r.type == Type.NULL) {
@@ -196,7 +195,7 @@ public class PrisonBossLevel extends RegularLevel {
 	
 	@Override
 	protected void placeTraps() {
-		
+
 		int nTraps = nTraps();
 
 		for (int i=0; i < nTraps; i++) {
@@ -265,7 +264,7 @@ public class PrisonBossLevel extends RegularLevel {
 		Point door = roomExit.entrance();
 		arenaDoor = door.x + door.y * WIDTH;
 		Painter.set( this, arenaDoor, Terrain.LOCKED_DOOR );
-		
+
 		Painter.fill( this, 
 			roomExit.left + 2,
 			roomExit.top + 2,
@@ -284,12 +283,11 @@ public class PrisonBossLevel extends RegularLevel {
 	
 	@Override
 	protected void createItems() {
-
 		int keyPos = anteroom.random();
 		while (!passable[keyPos]) {
 			keyPos = anteroom.random();
 		}
-		drop( new IronKey( Dungeon.depth ), keyPos ).type = Heap.Type.CHEST;
+		drop( new IronKey(), keyPos ).type = Heap.Type.CHEST;
 		
 		Item item = Bones.get();
 		if (item != null) {
@@ -316,7 +314,7 @@ public class PrisonBossLevel extends RegularLevel {
 			} while (pos == cell || Actor.findChar( pos ) != null);
 			
 			Mob boss = Bestiary.mob( Dungeon.depth );
-			boss.state = Mob.State.HUNTING;
+			boss.state = boss.HUNTING;
 			boss.pos = pos;
 			GameScene.add( boss );
 			boss.notice();

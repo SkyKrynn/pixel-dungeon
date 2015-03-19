@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ public class GameLog extends Component implements Signal.Listener<String> {
 	}
 	
 	@Override
-	protected void layout() {	
+	protected void layout() {
 		float pos = y;
 		for (int i=length-1; i >= 0; i--) {
 			BitmapTextMultiline entry = (BitmapTextMultiline)members.get( i );

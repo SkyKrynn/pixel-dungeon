@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.actors.hero.Hero;
 import com.watabou.pixeldungeon.actors.hero.HeroClass;
+import com.watabou.utils.Callback;
 
 public class HeroSprite extends CharSprite {
 	
@@ -92,6 +93,12 @@ public class HeroSprite extends CharSprite {
 	}
 	
 	@Override
+	public void jump( int from, int to, Callback callback ) {	
+		super.jump( from, to, callback );
+		play( fly );
+	}
+	
+	@Override
 	public void update() {
 		sleeping = ((Hero)ch).restoreHealth;
 		
@@ -105,7 +112,6 @@ public class HeroSprite extends CharSprite {
 	
 	public static TextureFilm tiers() {
 		if (tiers == null) {
-			// Sprites for all classes are the same in size
 			SmartTexture texture = TextureCache.get( Assets.ROGUE );
 			tiers = new TextureFilm( texture, texture.width, FRAME_HEIGHT );
 		}
@@ -123,5 +129,4 @@ public class HeroSprite extends CharSprite {
 		
 		return avatar;
 	}
-
 }

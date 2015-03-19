@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,10 @@ import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.TouchArea;
+import com.watabou.pixeldungeon.PixelDungeon;
 import com.watabou.pixeldungeon.effects.Flare;
 import com.watabou.pixeldungeon.ui.Archs;
+import com.watabou.pixeldungeon.ui.ExitButton;
 import com.watabou.pixeldungeon.ui.Icons;
 import com.watabou.pixeldungeon.ui.Window;
 
@@ -73,7 +75,7 @@ public class AboutScene extends PixelScene {
 		add( hotArea );
 		
 		Image wata = Icons.WATA.get();
-		wata.x = align( text.x + (text.width() - wata.width) / 2 );
+		wata.x = align( (Camera.main.width - wata.width) / 2 );
 		wata.y = text.y - wata.height - 8;
 		add( wata );
 		
@@ -83,11 +85,15 @@ public class AboutScene extends PixelScene {
 		archs.setSize( Camera.main.width, Camera.main.height );
 		addToBack( archs );
 		
+		ExitButton btnExit = new ExitButton();
+		btnExit.setPos( Camera.main.width - btnExit.width(), 0 );
+		add( btnExit );
+		
 		fadeIn();
 	}
 	
 	@Override
 	protected void onBackPressed() {
-		Game.switchScene( TitleScene.class );
+		PixelDungeon.switchNoFade( TitleScene.class );
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ public abstract class RegularLevel extends Level {
 		if (!initRooms()) {
 			return false;
 		}
-	
+
 		int distance;
 		int retry = 0;
 		int minDistance = (int)Math.sqrt( rooms.size() );
@@ -82,36 +82,34 @@ public abstract class RegularLevel extends Level {
 		
 		HashSet<Room> connected = new HashSet<Room>();
 		connected.add( roomEntrance );
-
+		
 		Graph.buildDistanceMap( rooms, roomExit );
 		List<Room> path = Graph.buildPath( rooms, roomEntrance, roomExit );
-
+		
 		Room room = roomEntrance;
 		for (Room next : path) {
 			room.connect( next );
 			room = next;
 			connected.add( room );
 		}
-
+		
 		Graph.setPrice( path, roomEntrance.distance );
-
+		
 		Graph.buildDistanceMap( rooms, roomExit );
 		path = Graph.buildPath( rooms, roomEntrance, roomExit );
-
+		
 		room = roomEntrance;
 		for (Room next : path) {
 			room.connect( next );
 			room = next;
 			connected.add( room );
 		}
-
+		
 		int nConnected = (int)(rooms.size() * Random.Float( 0.5f, 0.7f ));
 		while (connected.size() < nConnected) {
-
 			Room cr = Random.element( connected );
 			Room or = Random.element( cr.neigbours );
 			if (!connected.contains( or )) {
-
 				cr.connect( or );
 				connected.add( or );
 			}
@@ -149,14 +147,13 @@ public abstract class RegularLevel extends Level {
 	}
 	
 	protected boolean initRooms() {
-
 		rooms = new HashSet<Room>();
 		split( new Rect( 0, 0, WIDTH - 1, HEIGHT - 1 ) );
 		
 		if (rooms.size() < 8) {
 			return false;
 		}
-
+		
 		Room[] ra = rooms.toArray( new Room[0] );
 		for (int i=0; i < ra.length-1; i++) {
 			for (int j=i+1; j < ra.length; j++) {
@@ -170,7 +167,7 @@ public abstract class RegularLevel extends Level {
 	protected void assignRoomType() {
 		
 		int specialRooms = 0;
-
+		
 		for (Room r : rooms) {
 			if (r.type == Type.NULL && 
 				r.connected.size() == 1) {
@@ -590,7 +587,7 @@ public abstract class RegularLevel extends Level {
 	protected void createItems() {
 		
 		int nItems = 3;
-		while (Random.Float() < 0.3f) {
+		while (Random.Float() < 0.4f) {
 			nItems++;
 		}
 		
@@ -605,6 +602,9 @@ public abstract class RegularLevel extends Level {
 			case 3:
 			case 4:
 				type = Heap.Type.CHEST;
+				break;
+			case 5:
+				type = Dungeon.depth > 1 ? Heap.Type.MIMIC : Heap.Type.CHEST;
 				break;
 			default:
 				type = Heap.Type.HEAP;
@@ -681,7 +681,7 @@ public abstract class RegularLevel extends Level {
 	@Override
 	public void restoreFromBundle( Bundle bundle ) {
 		super.restoreFromBundle( bundle );
-
+		
 		rooms = new HashSet<Room>( (Collection<? extends Room>) bundle.getCollection( "rooms" ) );
 		for (Room r : rooms) {
 			if (r.type == Type.WEAK_FLOOR) {

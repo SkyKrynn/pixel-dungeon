@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ public class MysteryMeat extends Food {
 				break;
 			case 2:
 				GLog.w( "You are not feeling well." );
-				Buff.affect( hero, Poison.class ).set( Poison.durationFactor( hero ) * hero.HT / 2 / Poison.DOT );
+				Buff.affect( hero, Poison.class ).set( Poison.durationFactor( hero ) * hero.HT / 5 );
 				break;
 			case 3:
 				GLog.w( "You are stuffed." );

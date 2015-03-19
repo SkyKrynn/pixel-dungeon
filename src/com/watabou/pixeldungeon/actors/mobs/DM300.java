@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
 import com.watabou.pixeldungeon.Badges;
 import com.watabou.pixeldungeon.Dungeon;
+import com.watabou.pixeldungeon.Statistics;
 import com.watabou.pixeldungeon.actors.Actor;
 import com.watabou.pixeldungeon.actors.Char;
 import com.watabou.pixeldungeon.actors.blobs.Blob;
@@ -47,7 +48,7 @@ import com.watabou.utils.Random;
 public class DM300 extends Mob {
 	
 	{
-		name = "DM-300";
+		name = Dungeon.depth == Statistics.deepestFloor ? "DM-300" : "DM-350";
 		spriteClass = DM300Sprite.class;
 		
 		HP = HT = 200;
@@ -75,9 +76,7 @@ public class DM300 extends Mob {
 	
 	@Override
 	public boolean act() {
-		
 		GameScene.add( Blob.seed( pos, 30, ToxicGas.class ) );
-		
 		return super.act();
 	}
 	
@@ -94,7 +93,7 @@ public class DM300 extends Mob {
 				GLog.n( "DM-300 repairs itself!" );
 			}
 		}
-		
+
 		int[] cells = {
 			step-1, step+1, step-Level.WIDTH, step+Level.WIDTH, 
 			step-1-Level.WIDTH, 
@@ -129,7 +128,7 @@ public class DM300 extends Mob {
 		super.die( cause );
 		
 		GameScene.bossSlain();
-		Dungeon.level.drop( new SkeletonKey( Dungeon.depth  ), pos ).sprite.drop();
+		Dungeon.level.drop( new SkeletonKey(), pos ).sprite.drop();
 		
 		Badges.validateBossSlain();
 		

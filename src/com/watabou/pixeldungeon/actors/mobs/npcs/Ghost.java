@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ import java.util.HashSet;
 
 import com.watabou.noosa.audio.Sample;
 import com.watabou.pixeldungeon.Assets;
+import com.watabou.pixeldungeon.Challenges;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.Journal;
 import com.watabou.pixeldungeon.actors.Actor;
@@ -36,6 +37,7 @@ import com.watabou.pixeldungeon.effects.Speck;
 import com.watabou.pixeldungeon.items.Generator;
 import com.watabou.pixeldungeon.items.Item;
 import com.watabou.pixeldungeon.items.armor.Armor;
+import com.watabou.pixeldungeon.items.armor.ClothArmor;
 import com.watabou.pixeldungeon.items.quest.DriedRose;
 import com.watabou.pixeldungeon.items.quest.RatSkull;
 import com.watabou.pixeldungeon.items.weapon.Weapon;
@@ -49,7 +51,7 @@ import com.watabou.pixeldungeon.windows.WndSadGhost;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
-public class Ghost extends Mob.NPC {
+public class Ghost extends NPC {
 
 	{
 		name = "sad ghost";
@@ -57,7 +59,7 @@ public class Ghost extends Mob.NPC {
 		
 		flying = true;
 		
-		state = State.WANDERING;
+		state = WANDERING;
 	}
 	
 	private static final String TXT_ROSE1	=
@@ -100,7 +102,7 @@ public class Ghost extends Mob.NPC {
 	
 	@Override
 	protected Char chooseEnemy() {
-		return DUMMY;
+		return null;
 	}
 	
 	@Override
@@ -131,7 +133,7 @@ public class Ghost extends Mob.NPC {
 				GameScene.show( new WndSadGhost( this, item ) );
 			} else {
 				GameScene.show( new WndQuest( this, Quest.alternative ? TXT_RAT2 : TXT_ROSE2 ) );
-				
+
 				int newPos = -1;
 				for (int i=0; i < 10; i++) {
 					newPos = Dungeon.level.randomRespawnCell();
@@ -177,15 +179,15 @@ public class Ghost extends Mob.NPC {
 	}
 	
 	public static class Quest {
-		
+
 		private static boolean spawned;
-		
+
 		private static boolean alternative;
 
 		private static boolean given;
-		
+
 		private static boolean processed;
-		
+
 		private static int depth;
 		
 		private static int left2kill;
@@ -277,35 +279,39 @@ public class Ghost extends Mob.NPC {
 				processed = false;
 				depth = Dungeon.depth;
 				
-				do {
-					weapon = (Weapon)Generator.random( Generator.Category.WEAPON );
-				} while (weapon instanceof MissileWeapon);
-				armor = (Armor)Generator.random( Generator.Category.ARMOR );
-					
-				for (int i=0; i < 3; i++) {
+				for (int i=0; i < 4; i++) {
 					Item another;
 					do {
-						another = Generator.random( Generator.Category.WEAPON );
+						another = (Weapon)Generator.random( Generator.Category.WEAPON );
 					} while (another instanceof MissileWeapon);
-					if (another.level > weapon.level) {
+					
+					if (weapon == null || another.level > weapon.level) {
 						weapon = (Weapon)another;
 					}
-					another = Generator.random( Generator.Category.ARMOR );
-					if (another.level > armor.level) {
-						armor = (Armor)another;
+				}
+				
+				if (Dungeon.isChallenged( Challenges.NO_ARMOR )) {
+					armor = (Armor)new ClothArmor().degrade();
+				} else {
+					armor = (Armor)Generator.random( Generator.Category.ARMOR );
+					for (int i=0; i < 3; i++) {
+						Item another = Generator.random( Generator.Category.ARMOR );
+						if (another.level > armor.level) {
+							armor = (Armor)another;
+						}
 					}
 				}
+				
 				weapon.identify();
 				armor.identify();
 			}
 		}
-		
+
 		public static void process( int pos ) {
 			if (spawned && given && !processed && (depth == Dungeon.depth)) {
 				if (alternative) {
 					
 					FetidRat rat = new FetidRat();
-					rat.state = Mob.State.WANDERING;
 					rat.pos = Dungeon.level.randomRespawnCell();
 					if (rat.pos != -1) {
 						GameScene.add( rat );
@@ -344,6 +350,8 @@ public class Ghost extends Mob.NPC {
 			
 			EXP = 0;
 			maxLvl = 5;	
+			
+			state = WANDERING;
 		}
 		
 		@Override

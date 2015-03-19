@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ public class MageArmor extends ClassArmor {
 	
 	@Override
 	public void doSpecial() {	
-		
+
 		for (Mob mob : Dungeon.level.mobs) {
 			if (Level.fieldOfView[mob.pos]) {
 				Buff.affect( mob, Burning.class ).reignite( mob );
@@ -65,7 +65,7 @@ public class MageArmor extends ClassArmor {
 			}
 		}
 		
-		curUser.HP /= 2;
+		curUser.HP -= (curUser.HP / 3);
 		
 		curUser.spend( Actor.TICK );
 		curUser.sprite.operate( curUser.pos );

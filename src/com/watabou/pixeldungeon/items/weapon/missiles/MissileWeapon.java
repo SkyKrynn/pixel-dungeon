@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,9 +75,9 @@ public class MissileWeapon extends Weapon {
 		super.proc( attacker, defender, damage );
 		
 		Hero hero = (Hero)attacker;
-		if (!hero.usingRanged && stackable) {
+		if (hero.rangedWeapon == null && stackable) {
 			if (quantity == 1) {
-				doUnequip( hero, false );
+				doUnequip( hero, false, false );
 			} else {
 				detach( null );
 			}

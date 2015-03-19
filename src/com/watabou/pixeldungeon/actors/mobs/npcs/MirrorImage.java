@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@ import java.util.HashSet;
 
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.actors.Char;
+import com.watabou.pixeldungeon.actors.blobs.ToxicGas;
+import com.watabou.pixeldungeon.actors.buffs.Burning;
 import com.watabou.pixeldungeon.actors.hero.Hero;
 import com.watabou.pixeldungeon.actors.mobs.Mob;
 import com.watabou.pixeldungeon.levels.Level;
@@ -29,15 +31,13 @@ import com.watabou.pixeldungeon.sprites.MirrorSprite;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
-public class MirrorImage extends Mob.NPC {
+public class MirrorImage extends NPC {
 	
 	{
 		name = "mirror image";
 		spriteClass = MirrorSprite.class;
 		
-		state = State.HUNTING;
-		
-		enemy = DUMMY;
+		state = HUNTING;
 	}
 	
 	public int tier;
@@ -93,7 +93,7 @@ public class MirrorImage extends Mob.NPC {
 	
 	protected Char chooseEnemy() {
 		
-		if (enemy == DUMMY || !enemy.isAlive()) {
+		if (enemy == null || !enemy.isAlive()) {
 			HashSet<Mob> enemies = new HashSet<Mob>();
 			for (Mob mob:Dungeon.level.mobs) {
 				if (mob.hostile && Level.fieldOfView[mob.pos]) {
@@ -101,7 +101,7 @@ public class MirrorImage extends Mob.NPC {
 				}
 			}
 			
-			enemy = enemies.size() > 0 ? Random.element( enemies ) : DUMMY;
+			return enemies.size() > 0 ? Random.element( enemies ) : null;
 		}
 		
 		return enemy;
@@ -134,5 +134,16 @@ public class MirrorImage extends Mob.NPC {
 		
 		Dungeon.hero.spend( 1 / Dungeon.hero.speed() );
 		Dungeon.hero.busy();
+	}
+	
+	private static final HashSet<Class<?>> IMMUNITIES = new HashSet<Class<?>>();
+	static {
+		IMMUNITIES.add( ToxicGas.class );
+		IMMUNITIES.add( Burning.class );
+	}
+	
+	@Override
+	public HashSet<Class<?>> immunities() {
+		return IMMUNITIES;
 	}
 }

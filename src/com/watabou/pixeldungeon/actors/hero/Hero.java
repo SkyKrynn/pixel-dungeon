@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 package com.watabou.pixeldungeon.actors.hero;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 
 import com.watabou.noosa.Camera;
@@ -28,6 +29,7 @@ import com.watabou.pixeldungeon.Badges;
 import com.watabou.pixeldungeon.Bones;
 import com.watabou.pixeldungeon.Dungeon;
 import com.watabou.pixeldungeon.GamesInProgress;
+import com.watabou.pixeldungeon.ResultDescriptions;
 import com.watabou.pixeldungeon.actors.Actor;
 import com.watabou.pixeldungeon.actors.Char;
 import com.watabou.pixeldungeon.actors.buffs.Barkskin;
@@ -49,8 +51,10 @@ import com.watabou.pixeldungeon.actors.buffs.Regeneration;
 import com.watabou.pixeldungeon.actors.buffs.Roots;
 import com.watabou.pixeldungeon.actors.buffs.Charm;
 import com.watabou.pixeldungeon.actors.buffs.SnipersMark;
+import com.watabou.pixeldungeon.actors.buffs.Vertigo;
 import com.watabou.pixeldungeon.actors.buffs.Weakness;
 import com.watabou.pixeldungeon.actors.mobs.Mob;
+import com.watabou.pixeldungeon.actors.mobs.npcs.NPC;
 import com.watabou.pixeldungeon.effects.CheckedCell;
 import com.watabou.pixeldungeon.effects.Flare;
 import com.watabou.pixeldungeon.effects.Speck;
@@ -67,6 +71,8 @@ import com.watabou.pixeldungeon.items.keys.GoldenKey;
 import com.watabou.pixeldungeon.items.keys.Key;
 import com.watabou.pixeldungeon.items.keys.SkeletonKey;
 import com.watabou.pixeldungeon.items.keys.IronKey;
+import com.watabou.pixeldungeon.items.potions.Potion;
+import com.watabou.pixeldungeon.items.potions.PotionOfMight;
 import com.watabou.pixeldungeon.items.potions.PotionOfStrength;
 import com.watabou.pixeldungeon.items.rings.RingOfAccuracy;
 import com.watabou.pixeldungeon.items.rings.RingOfDetection;
@@ -75,16 +81,19 @@ import com.watabou.pixeldungeon.items.rings.RingOfEvasion;
 import com.watabou.pixeldungeon.items.rings.RingOfHaste;
 import com.watabou.pixeldungeon.items.rings.RingOfShadows;
 import com.watabou.pixeldungeon.items.rings.RingOfThorns;
+import com.watabou.pixeldungeon.items.scrolls.Scroll;
 import com.watabou.pixeldungeon.items.scrolls.ScrollOfMagicMapping;
 import com.watabou.pixeldungeon.items.scrolls.ScrollOfRecharging;
 import com.watabou.pixeldungeon.items.scrolls.ScrollOfUpgrade;
+import com.watabou.pixeldungeon.items.scrolls.ScrollOfEnchantment;
 import com.watabou.pixeldungeon.items.wands.Wand;
-import com.watabou.pixeldungeon.items.weapon.Weapon;
 import com.watabou.pixeldungeon.items.weapon.melee.MeleeWeapon;
+import com.watabou.pixeldungeon.items.weapon.missiles.MissileWeapon;
 import com.watabou.pixeldungeon.levels.Level;
 import com.watabou.pixeldungeon.levels.Terrain;
 import com.watabou.pixeldungeon.levels.features.AlchemyPot;
 import com.watabou.pixeldungeon.levels.features.Chasm;
+import com.watabou.pixeldungeon.levels.features.Sign;
 import com.watabou.pixeldungeon.plants.Earthroot;
 import com.watabou.pixeldungeon.scenes.GameScene;
 import com.watabou.pixeldungeon.scenes.InterlevelScene;
@@ -93,7 +102,6 @@ import com.watabou.pixeldungeon.sprites.CharSprite;
 import com.watabou.pixeldungeon.sprites.HeroSprite;
 import com.watabou.pixeldungeon.ui.AttackIndicator;
 import com.watabou.pixeldungeon.ui.BuffIndicator;
-import com.watabou.pixeldungeon.ui.QuickSlot;
 import com.watabou.pixeldungeon.utils.GLog;
 import com.watabou.pixeldungeon.windows.WndMessage;
 import com.watabou.pixeldungeon.windows.WndResurrect;
@@ -131,7 +139,9 @@ public class Hero extends Char {
 	private int attackSkill = 10;
 	private int defenseSkill = 5;
 	
+
 	public boolean ready = false;
+
 	public HeroAction curAction = null;
 	public HeroAction lastAction = null;
 	
@@ -143,7 +153,7 @@ public class Hero extends Char {
 	
 	public boolean restoreHealth = false;
 	
-	public boolean usingRanged = false;
+	public MissileWeapon rangedWeapon = null;
 	public Belongings belongings;
 	
 	public int STR;
@@ -217,9 +227,6 @@ public class Hero extends Char {
 	}
 	
 	public static void preview( GamesInProgress.Info info, Bundle bundle ) {
-		// Refactoring needed!
-		Armor armor = (Armor)bundle.get( "armor" );
-		info.armor = armor == null ? 0 : armor.tier;
 		info.level = bundle.getInt( LEVEL );
 	}
 	
@@ -236,18 +243,11 @@ public class Hero extends Char {
 		return belongings.armor == null ? 0 : belongings.armor.tier;
 	}
 	
-	public boolean shoot( Char enemy, Weapon wep ) {
+	public boolean shoot( Char enemy, MissileWeapon wep ) {
 		
-		// Ugly...
-		usingRanged = true;
-		
-		KindOfWeapon curWep = belongings.weapon;
-		belongings.weapon = wep;
-		
+		rangedWeapon = wep;
 		boolean result = attack( enemy );
-		
-		belongings.weapon = curWep;
-		usingRanged = false;
+		rangedWeapon = null;
 		
 		return result;
 	}
@@ -260,12 +260,13 @@ public class Hero extends Char {
 			bonus += ((RingOfAccuracy.Accuracy)buff).level;
 		}
 		float accuracy = (bonus == 0) ? 1 : (float)Math.pow( 1.4, bonus );
-		if (usingRanged && Level.distance( pos, target.pos ) == 1) {
+		if (rangedWeapon != null && Level.distance( pos, target.pos ) == 1) {
 			accuracy *= 0.5f;
 		}
 		
-		if (belongings.weapon != null) {
-			return (int)(attackSkill * accuracy * belongings.weapon.acuracyFactor( this ));
+		KindOfWeapon wep = rangedWeapon != null ? rangedWeapon : belongings.weapon;
+		if (wep != null) {
+			return (int)(attackSkill * accuracy * wep.acuracyFactor( this ));
 		} else {
 			return (int)(attackSkill * accuracy);
 		}
@@ -314,9 +315,10 @@ public class Hero extends Char {
 	
 	@Override
 	public int damageRoll() {
+		KindOfWeapon wep = rangedWeapon != null ? rangedWeapon : belongings.weapon;
 		int dmg;
-		if (belongings.weapon != null) {	
-			dmg = belongings.weapon.damageRoll( this );
+		if (wep != null) {	
+			dmg = wep.damageRoll( this );
 		} else {
 			dmg = STR() > 10 ? Random.IntRange( 1, STR() - 9 ) : 1;
 		}
@@ -340,9 +342,10 @@ public class Hero extends Char {
 	}
 	
 	public float attackDelay() {
-		if (belongings.weapon != null) {
+		KindOfWeapon wep = rangedWeapon != null ? rangedWeapon : belongings.weapon;
+		if (wep != null) {
 			
-			return belongings.weapon.speedFactor( this );
+			return wep.speedFactor( this );
 						
 		} else {
 			return 1f;
@@ -392,6 +395,7 @@ public class Hero extends Char {
 			}
 			
 			ready();
+			return false;
 			
 		} else {
 			
@@ -401,52 +405,52 @@ public class Hero extends Char {
 			
 			if (curAction instanceof HeroAction.Move) {
 				
-				actMove( (HeroAction.Move)curAction );
+				return actMove( (HeroAction.Move)curAction );
 				
 			} else 
 			if (curAction instanceof HeroAction.Interact) {
 				
-				actInteract( (HeroAction.Interact)curAction );
+				return actInteract( (HeroAction.Interact)curAction );
 				
 			} else 
 			if (curAction instanceof HeroAction.Buy) {
 				
-				actBuy( (HeroAction.Buy)curAction );
+				return actBuy( (HeroAction.Buy)curAction );
 				
 			}else 
 			if (curAction instanceof HeroAction.PickUp) {
 				
-				actPickUp( (HeroAction.PickUp)curAction );
+				return actPickUp( (HeroAction.PickUp)curAction );
 				
 			} else 
 			if (curAction instanceof HeroAction.OpenChest) {
 				
-				actOpenChest( (HeroAction.OpenChest)curAction );
+				return actOpenChest( (HeroAction.OpenChest)curAction );
 				
 			} else 
 			if (curAction instanceof HeroAction.Unlock) {
 				
-				actUnlock( (HeroAction.Unlock)curAction );
+				return actUnlock( (HeroAction.Unlock)curAction );
 				
 			} else 
 			if (curAction instanceof HeroAction.Descend) {
 				
-				actDescend( (HeroAction.Descend)curAction );
+				return actDescend( (HeroAction.Descend)curAction );
 				
 			} else
 			if (curAction instanceof HeroAction.Ascend) {
 				
-				actAscend( (HeroAction.Ascend)curAction );
+				return actAscend( (HeroAction.Ascend)curAction );
 				
 			} else
 			if (curAction instanceof HeroAction.Attack) {
 
-				actAttack( (HeroAction.Attack)curAction );
+				return actAttack( (HeroAction.Attack)curAction );
 				
 			} else
 			if (curAction instanceof HeroAction.Cook) {
 
-				actCook( (HeroAction.Cook)curAction );
+				return actCook( (HeroAction.Cook)curAction );
 				
 			}
 		}
@@ -467,7 +471,7 @@ public class Hero extends Char {
 	}
 	
 	public void interrupt() {
-		if (curAction != null && curAction.dst != pos) {
+		if (isAlive() && curAction != null && curAction.dst != pos) {
 			lastAction = curAction;
 		}
 		curAction = null;
@@ -479,40 +483,48 @@ public class Hero extends Char {
 		act();
 	}
 	
-	private void actMove( HeroAction.Move action ) {
+	private boolean actMove( HeroAction.Move action ) {
 
 		if (getCloser( action.dst )) {
 			
+			return true;
+			
 		} else {
 			if (Dungeon.level.map[pos] == Terrain.SIGN) {
-				GameScene.show( new WndMessage( Dungeon.tip() ) );
+				Sign.read( pos );
 			}
 			ready();
+			
+			return false;
 		}
 	}
 	
-	private void actInteract( HeroAction.Interact action ) {
+	private boolean actInteract( HeroAction.Interact action ) {
 		
-		Mob.NPC npc = action.npc;
+		NPC npc = action.npc;
 
 		if (Level.adjacent( pos, npc.pos )) {
 			
 			ready();
 			sprite.turnTo( pos, npc.pos );
 			npc.interact();
+			return false;
 			
 		} else {
 			
 			if (Level.fieldOfView[npc.pos] && getCloser( npc.pos )) {
 				
+				return true;
+				
 			} else {
 				ready();
+				return false;
 			}
 			
 		}
 	}
 	
-	private void actBuy( HeroAction.Buy action ) {
+	private boolean actBuy( HeroAction.Buy action ) {
 		int dst = action.dst;
 		if (pos == dst || Level.adjacent( pos, dst )) {
 
@@ -523,28 +535,37 @@ public class Hero extends Char {
 				GameScene.show( new WndTradeItem( heap, true ) );
 			}
 			
+			return false;
+			
 		} else if (getCloser( dst )) {
+			
+			return true;
 			
 		} else {
 			ready();
+			return false;
 		}
 	}
 	
-	private void actCook( HeroAction.Cook action ) {
+	private boolean actCook( HeroAction.Cook action ) {
 		int dst = action.dst;
 		if (Dungeon.visible[dst]) {
 
 			ready();
 			AlchemyPot.operate( this, dst );
+			return false;
 			
 		} else if (getCloser( dst )) {
 			
+			return true;
+			
 		} else {
 			ready();
+			return false;
 		}
 	}
 	
-	private void actPickUp( HeroAction.PickUp action ) {
+	private boolean actPickUp( HeroAction.PickUp action ) {
 		int dst = action.dst;
 		if (pos == dst) {
 			
@@ -554,11 +575,12 @@ public class Hero extends Char {
 				if (item.doPickUp( this )) {
 					
 					if (item instanceof Dewdrop) {
-						
+						// Do nothing
 					} else {
-						
-						if ((item instanceof ScrollOfUpgrade && ((ScrollOfUpgrade)item).isKnown()) ||
-							(item instanceof PotionOfStrength && ((PotionOfStrength)item).isKnown())) {
+						boolean important = 
+							((item instanceof ScrollOfUpgrade || item instanceof ScrollOfEnchantment) && ((Scroll)item).isKnown()) ||
+							((item instanceof PotionOfStrength || item instanceof PotionOfMight) && ((Potion)item).isKnown());
+						if (important) {
 							GLog.p( TXT_YOU_NOW_HAVE, item.name() );
 						} else {
 							GLog.i( TXT_YOU_NOW_HAVE, item.name() );
@@ -577,21 +599,24 @@ public class Hero extends Char {
 				ready();
 			}
 			
+			return false;
+			
 		} else if (getCloser( dst )) {
+			
+			return true;
 			
 		} else {
 			ready();
+			return false;
 		}
 	}
 	
-	private void actOpenChest( HeroAction.OpenChest action ) {
+	private boolean actOpenChest( HeroAction.OpenChest action ) {
 		int dst = action.dst;
 		if (Level.adjacent( pos, dst ) || pos == dst) {
 			
 			Heap heap = Dungeon.level.heaps.get( dst );
-			if (heap != null && 
-				(heap.type == Type.CHEST || heap.type == Type.TOMB || heap.type == Type.SKELETON ||
-				heap.type == Type.LOCKED_CHEST || heap.type == Type.CRYSTAL_CHEST)) {
+			if (heap != null && (heap.type != Type.HEAP && heap.type != Type.FOR_SALE)) {
 				
 				theKey = null;
 				
@@ -602,7 +627,7 @@ public class Hero extends Char {
 					if (theKey == null) {
 						GLog.w( TXT_LOCKED_CHEST );
 						ready();
-						return;
+						return false;
 					}
 				}
 				
@@ -624,14 +649,19 @@ public class Hero extends Char {
 				ready();
 			}
 			
+			return false;
+			
 		} else if (getCloser( dst )) {
+			
+			return true;
 			
 		} else {
 			ready();
+			return false;
 		}
 	}
 	
-	private void actUnlock( HeroAction.Unlock action ) {
+	private boolean actUnlock( HeroAction.Unlock action ) {
 		int doorCell = action.dst;
 		if (Level.adjacent( pos, doorCell )) {
 			
@@ -660,14 +690,19 @@ public class Hero extends Char {
 				ready();
 			}
 			
+			return false;
+			
 		} else if (getCloser( doorCell )) {
+			
+			return true;
 			
 		} else {
 			ready();
+			return false;
 		}
 	}
 	
-	private void actDescend( HeroAction.Descend action ) {
+	private boolean actDescend( HeroAction.Descend action ) {
 		int stairs = action.dst;
 		if (pos == stairs && pos == Dungeon.level.exit) {
 			
@@ -681,14 +716,19 @@ public class Hero extends Char {
 			InterlevelScene.mode = InterlevelScene.Mode.DESCEND;
 			Game.switchScene( InterlevelScene.class );
 			
+			return false;
+			
 		} else if (getCloser( stairs )) {
+			
+			return true;
 			
 		} else {
 			ready();
+			return false;
 		}
 	}
 	
-	private void actAscend( HeroAction.Ascend action ) {
+	private boolean actAscend( HeroAction.Ascend action ) {
 		int stairs = action.dst;
 		if (pos == stairs && pos == Dungeon.level.entrance) {
 			
@@ -698,6 +738,7 @@ public class Hero extends Char {
 					GameScene.show( new WndMessage( TXT_LEAVE ) );
 					ready();
 				} else {
+					Dungeon.win( ResultDescriptions.WIN );
 					Dungeon.deleteGame( Dungeon.hero.heroClass, true );
 					Game.switchScene( SurfaceScene.class );
 				}
@@ -710,33 +751,43 @@ public class Hero extends Char {
 				if (hunger != null && !hunger.isStarving()) {
 					hunger.satisfy( -Hunger.STARVING / 10 );
 				}
-
+				
 				InterlevelScene.mode = InterlevelScene.Mode.ASCEND;
 				Game.switchScene( InterlevelScene.class );
 			}
 			
+			return false;
+			
 		} else if (getCloser( stairs )) {
-
+			
+			return true;
+			
 		} else {
 			ready();
+			return false;
 		}
 	}
 	
-	private void actAttack( HeroAction.Attack action ) {
+	private boolean actAttack( HeroAction.Attack action ) {
 
 		enemy = action.target;
 
-		if (Level.adjacent( pos, enemy.pos ) && enemy.isAlive() && !pacified) {
+		if (Level.adjacent( pos, enemy.pos ) && enemy.isAlive() && !isCharmedBy( enemy )) {
 			
 			spend( attackDelay() );
 			sprite.attack( enemy.pos );
+			
+			return false;
 			
 		} else {
 			
 			if (Level.fieldOfView[enemy.pos] && getCloser( enemy.pos )) {
 				
+				return true;
+				
 			} else {
 				ready();
+				return false;
 			}
 			
 		}
@@ -752,34 +803,36 @@ public class Hero extends Char {
 	
 	@Override
 	public int attackProc( Char enemy, int damage ) {
-		if (belongings.weapon != null) {
+		KindOfWeapon wep = rangedWeapon != null ? rangedWeapon : belongings.weapon;
+		if (wep != null) {
 			
-			KindOfWeapon weapon = belongings.weapon;
-			weapon.proc( this, enemy, damage );
+			wep.proc( this, enemy, damage );
 			
 			switch (subClass) {
 			case GLADIATOR:
-				if (weapon instanceof MeleeWeapon) {
+				if (wep instanceof MeleeWeapon) {
 					damage += Buff.affect( this, Combo.class ).hit( enemy, damage );
 				}
 				break;
 			case BATTLEMAGE:
-				if (weapon instanceof Wand) {
-					Wand wand = (Wand)weapon;
-					if (wand.curCharges < wand.maxCharges && damage > 0) {
+				if (wep instanceof Wand) {
+					Wand wand = (Wand)wep;
+					if (wand.curCharges >= wand.maxCharges) {
+						
+						wand.use();
+						
+					} else if (damage > 0) {
 						
 						wand.curCharges++;
-						if (Dungeon.quickslot == wand) {
-							QuickSlot.refresh();
-						}
+						wand.updateQuickslot();
 						
 						ScrollOfRecharging.charge( this );
 					}
 					damage += wand.curCharges;
 				}
 			case SNIPER:
-				if (usingRanged) {
-					Buff.prolong( enemy, SnipersMark.class, attackDelay() * 1.1f );
+				if (rangedWeapon != null) {
+					Buff.prolong( this, SnipersMark.class, attackDelay() * 1.1f ).object = enemy.id();
 				}
 				break;
 			default:
@@ -823,9 +876,8 @@ public class Hero extends Char {
 	}
 	
 	private void checkVisibleMobs() {
-
 		ArrayList<Mob> visible = new ArrayList<Mob>();
-
+		
 		boolean newMob = false;
 		
 		for (Mob m : Dungeon.level.mobs) {
@@ -856,6 +908,7 @@ public class Hero extends Char {
 	private boolean getCloser( final int target ) {
 		
 		if (rooted) {
+			Camera.main.shake( 1, 1f );
 			return false;
 		}
 		
@@ -890,8 +943,9 @@ public class Hero extends Char {
 		
 		if (step != -1) {
 			
-			sprite.move( pos, step );
+			int oldPos = pos;
 			move( step );
+			sprite.move( oldPos, pos );
 			spend( 1 / speed() );
 			
 			return true;
@@ -904,10 +958,10 @@ public class Hero extends Char {
 
 	}
 	
-	public void handle( int cell ) {
+	public boolean handle( int cell ) {
 		
 		if (cell == -1) {
-			return;
+			return false;
 		}
 		
 		Char ch;
@@ -917,16 +971,15 @@ public class Hero extends Char {
 			
 			curAction = new HeroAction.Cook( cell );
 			
-		} else
-		if (Level.fieldOfView[cell] && (ch = Actor.findChar( cell )) instanceof Mob) {
+		} else if (Level.fieldOfView[cell] && (ch = Actor.findChar( cell )) instanceof Mob) {
 			
-			if (ch instanceof Mob.NPC) {
-				curAction = new HeroAction.Interact( (Mob.NPC)ch );
+			if (ch instanceof NPC) {
+				curAction = new HeroAction.Interact( (NPC)ch );
 			} else {
 				curAction = new HeroAction.Attack( ch );
 			}
 			
-		} else if ((heap = Dungeon.level.heaps.get( cell )) != null) {
+		} else if (Level.fieldOfView[cell] && (heap = Dungeon.level.heaps.get( cell )) != null) {
 
 			switch (heap.type) {
 			case HEAP:
@@ -960,7 +1013,7 @@ public class Hero extends Char {
 			
 		}
 
-		act();
+		return act();
 	}
 	
 	public void earnExp( int exp ) {
@@ -1051,6 +1104,9 @@ public class Hero extends Char {
 				GLog.w( "You are crippled!" );
 			} else if (buff instanceof Bleeding) {
 				GLog.w( "You are bleeding!" );
+			} else if (buff instanceof Vertigo) {
+				GLog.w( "Everything is spinning around you!" );
+				interrupt();
 			}
 			
 			else if (buff instanceof Light) {
@@ -1135,6 +1191,28 @@ public class Hero extends Char {
 				
 		Dungeon.hero.belongings.identify();
 		
+		int pos = Dungeon.hero.pos;
+		
+		ArrayList<Integer> passable = new ArrayList<Integer>();
+		for (Integer ofs : Level.NEIGHBOURS8) {
+			int cell = pos + ofs;
+			if ((Level.passable[cell] || Level.avoid[cell]) && Dungeon.level.heaps.get( cell ) == null) {
+				passable.add( cell );
+			}
+		}
+		Collections.shuffle( passable );
+		
+		ArrayList<Item> items = new ArrayList<Item>( Dungeon.hero.belongings.backpack.items );
+		for (Integer cell : passable) {
+			if (items.isEmpty()) {
+				break;
+			}
+			
+			Item item = Random.element( items );
+			Dungeon.level.drop( item, cell ).sprite.drop( pos );
+			items.remove( item );
+		}
+		
 		GameScene.gameOver();
 		
 		if (cause instanceof Hero.Doom) {
@@ -1150,18 +1228,17 @@ public class Hero extends Char {
 		
 		if (!flying) {
 			
-			if (Level.water[step]) {
+			if (Level.water[pos]) {
 				Sample.INSTANCE.play( Assets.SND_WATER, 1, 1, Random.Float( 0.8f, 1.25f ) );
 			} else {
 				Sample.INSTANCE.play( Assets.SND_STEP );
 			}
-			Dungeon.level.press( step, this );
+			Dungeon.level.press( pos, this );
 		}
 	}
 	
 	@Override
 	public void onMotionComplete() {
-		
 		Dungeon.observe();
 		search( false );
 			
@@ -1233,7 +1310,6 @@ public class Hero extends Char {
 
 		float level = intentional ? (2 * awareness - awareness * awareness) : awareness;
 		if (distance <= 0) {
-
 			level /= 2 - distance;
 			distance = 1;
 		}
@@ -1312,7 +1388,7 @@ public class Hero extends Char {
 		exp = 0;
 		
 		belongings.resurrect( resetLevel );
-
+		
 		live();
 	}
 	
@@ -1326,6 +1402,11 @@ public class Hero extends Char {
 	public HashSet<Class<?>> immunities() {
 		GasesImmunity buff = buff( GasesImmunity.class );
 		return buff == null ? super.immunities() : GasesImmunity.IMMUNITIES;
+	}
+	
+	@Override
+	public void next() {
+		super.next();
 	}
 	
 	public static interface Doom {

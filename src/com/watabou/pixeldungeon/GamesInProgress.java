@@ -1,6 +1,6 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2014  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,11 +51,11 @@ public class GamesInProgress {
 		}
 	}
 	
-	public static void set( HeroClass cl, int depth, int level, int armor ) {
+	public static void set( HeroClass cl, int depth, int level, boolean challenges ) {
 		Info info = new Info();
 		info.depth = depth;
 		info.level = level;
-		info.armor = armor;
+		info.challenges = challenges;
 		state.put( cl, info );
 	}
 	
@@ -70,6 +70,6 @@ public class GamesInProgress {
 	public static class Info {
 		public int depth;
 		public int level;
-		public int armor;
+		public boolean challenges;
 	}
 }
